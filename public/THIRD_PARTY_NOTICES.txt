@@ -1,0 +1,18 @@
+SketchRNN Lab is an educational interface using pretrained SketchRNN inference.
+
+Research: David Ha and Douglas Eck, A Neural Representation of Sketch Drawings (2017).
+https://arxiv.org/abs/1704.03477
+
+Original implementation and browser library: Google Magenta / The Magenta Team.
+Copyright 2018 The Magenta Team. All rights reserved.
+@magenta/sketch 0.2.0 and TensorFlow.js are distributed under Apache-2.0.
+https://github.com/magenta/magenta-js/tree/master/sketch
+https://github.com/magenta/magenta
+
+The original authors developed and trained the model. This app does not train it.
+Model provenance, checksum, and licensing caveat: /model-source.json.
+The cat checkpoint is obtained separately by npm run prepare:model.
+Quick, Draw! supplied the training sketches; the dataset and weights are distinct assets.
+
+React / React DOM: Meta Platforms, Inc. and affiliates. MIT License.
+See THIRD_PARTY_LICENSES.txt for bundled dependency licenses.
