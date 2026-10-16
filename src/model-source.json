@@ -1,0 +1,28 @@
+{
+  "format": "Magenta SketchRNN quantized JSON, decoder-only, 512 LSTM units",
+  "attribution": "Pretrained SketchRNN checkpoints provided by Google Magenta; research by David Ha and Douglas Eck (2017).",
+  "licensing": "Magenta JavaScript code is Apache-2.0. Asset-specific redistribution terms were not confirmed; weights are downloaded for local preparation and excluded from Git. No license for the weights is asserted here.",
+  "models": [
+    {
+      "category": "cat",
+      "label": "Cat",
+      "source": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/cat.gen.json",
+      "sha256": "54d83b0b790323eb758739d7c685f12e1a68740361f35e451a3e0cee1b577ae9",
+      "bytes": 2997378
+    },
+    {
+      "category": "bird",
+      "label": "Bird",
+      "source": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/bird.gen.json",
+      "sha256": "d0b3085fa5dd12c194e395c8c04dd924f1b6e20ca5165a5bf4bfed5e44da82ce",
+      "bytes": 2997382
+    },
+    {
+      "category": "flower",
+      "label": "Flower",
+      "source": "https://storage.googleapis.com/quickdraw-models/sketchRNN/models/flower.gen.json",
+      "sha256": "8710baafba88517a8318f29679f20221c3984504f1104c31f3271b0360660b45",
+      "bytes": 2997384
+    }
+  ]
+}

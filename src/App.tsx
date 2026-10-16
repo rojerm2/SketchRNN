@@ -3,7 +3,8 @@ import { GenerationEngine, type Status } from "./engine";
 import { MagentaInference } from "./inference";
 import { SketchCanvas } from "./SketchCanvas";
 import { LearnPanel } from "./LearnPanel";
-import { EXAMPLE, MAX_PREFIX, penName, toTokens } from "./strokes";
+import { MAX_PREFIX, penName, toTokens } from "./strokes";
+import { MODELS, type ModelDefinition } from "./models";
 import type { Line } from "./types";
 import "./styles.css";
 
@@ -61,7 +62,24 @@ const statusLabel: Record<Status, string> = {
 };
 
 export default function App() {
-  const [engine] = useState(() => new GenerationEngine(new MagentaInference()));
+  const [category, setCategory] = useState(MODELS[0].category);
+  const model = MODELS.find((item) => item.category === category) ?? MODELS[0];
+  return (
+    <LabSession key={category} model={model} onModelChange={setCategory} />
+  );
+}
+
+function LabSession({
+  model,
+  onModelChange,
+}: {
+  model: ModelDefinition;
+  onModelChange(category: string): void;
+}) {
+  // A category owns its engine and drawing. Unmounting cancels its loop and releases its model.
+  const [engine] = useState(
+    () => new GenerationEngine(new MagentaInference(model)),
+  );
   const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
   const [lines, setLines] = useState<readonly Line[]>([]);
   const [temperature, setTemperature] = useState(0.5);
@@ -94,7 +112,7 @@ export default function App() {
   };
   const useExample = () => {
     engine.clear();
-    setLines(EXAMPLE);
+    setLines(model.example);
     setRevision((r) => r + 1);
     setExample(true);
     setWarning("");
@@ -170,6 +188,7 @@ export default function App() {
             <div className={`canvas-surface ${!canDraw ? "locked" : ""}`}>
               <SketchCanvas
                 key={revision}
+                category={model.label.toLowerCase()}
                 lines={lines}
                 generated={snapshot.generated}
                 enabled={canDraw}
@@ -187,17 +206,16 @@ export default function App() {
               {!lines.length && snapshot.status !== "drawing" && (
                 <div className="canvas-empty">
                   <div className="empty-illustration" aria-hidden="true">
-                    <svg viewBox="0 0 100 80">
-                      <path d="M20 60 23 17 40 32Q50 27 60 32L78 17 82 60M20 60q30 20 62 0" />
-                      <path
-                        className="illustration-dashed"
-                        d="M36 49h1m26 0h1M46 59l5 3 5-3"
-                      />
+                    <svg viewBox="0 0 48 48">
+                      <path d={model.icon} />
                     </svg>
                     <span>＋</span>
                   </div>
                   <h2>Every sketch starts somewhere.</h2>
-                  <p>Draw part of a cat. Leave a little to the imagination.</p>
+                  <p>
+                    Draw part of a {model.label.toLowerCase()}. Leave a little
+                    to the imagination.
+                  </p>
                   <span className="empty-small">MOUSE, PEN OR TOUCH</span>
                 </div>
               )}
@@ -241,22 +259,38 @@ export default function App() {
               See where it takes the next line.
             </p>
             <div className="model-card">
-              <div className="cat-symbol" aria-hidden="true">
+              <div className="model-symbol" aria-hidden="true">
                 <svg viewBox="0 0 48 48">
-                  <path d="m9 29 2-20 10 9h6l10-9 2 20q-15 17-30 0Z M17 28h1m12 0h1m-10 7 3 2 3-2" />
+                  <path d={model.icon} />
                 </svg>
               </div>
               <div>
-                <strong>Cat</strong>
+                <label className="sr-only" htmlFor="category">
+                  Drawing category
+                </label>
+                <select
+                  id="category"
+                  value={model.category}
+                  onChange={(event) => onModelChange(event.target.value)}
+                  aria-describedby="category-help category-reset-note"
+                >
+                  {MODELS.map((item) => (
+                    <option key={item.category} value={item.category}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
                 <small>Pretrained SketchRNN · 512-unit LSTM</small>
               </div>
               <span className="model-check" aria-label="Selected category">
                 ✓
               </span>
             </div>
-            <p className="category-help">
-              Start with ears, a head, or a simple outline. This model has
-              learned from cat sketches.
+            <p className="category-help" id="category-help">
+              {model.hint}
+            </p>
+            <p className="category-reset-note" id="category-reset-note">
+              Changing category starts a new sketch.
             </p>
             <div className="temperature-heading">
               <label htmlFor="temperature">Temperature</label>
@@ -341,7 +375,7 @@ export default function App() {
                   {snapshot.status === "ready"
                     ? "Draw a prefix or load the example to begin."
                     : snapshot.status === "loading"
-                      ? "Opening local cat weights…"
+                      ? `Opening local ${model.category} weights…`
                       : snapshot.status === "reading"
                         ? "Building recurrent context from your input."
                         : snapshot.status === "paused"

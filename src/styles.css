@@ -461,7 +461,7 @@ h1 > span {
   background: #eef1e7;
   border-radius: 8px;
 }
-.cat-symbol {
+.model-symbol {
   width: 41px;
   height: 41px;
   display: grid;
@@ -469,7 +469,7 @@ h1 > span {
   background: #e0e8d3;
   border-radius: 7px;
 }
-.cat-symbol svg {
+.model-symbol svg {
   width: 36px;
   stroke: #607849;
   stroke-width: 1.4;
@@ -487,6 +487,30 @@ h1 > span {
   font-size: 10px;
   color: #52664a;
   margin-top: 2px;
+}
+.model-card select {
+  font: inherit;
+  font-weight: 600;
+  color: #253c33;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  min-height: 32px;
+  width: 100%;
+  padding: 0 22px 0 0;
+}
+.model-card > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.category-reset-note {
+  color: #596b50;
+  font-size: 10px;
+  margin: -10px 1px 16px;
+}
+select:focus-visible {
+  outline: 3px solid #9560c5;
+  outline-offset: 4px;
 }
 .model-check {
   margin-left: auto;

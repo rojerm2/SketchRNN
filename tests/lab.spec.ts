@@ -99,76 +99,135 @@ test("separate pointer paths preserve lift boundaries and resize coherently", as
   await page.getByRole("button", { name: "Stop", exact: true }).click();
 });
 
-test("real checkpoint generates offline in the production build", async ({
-  page,
-}, testInfo) => {
-  const errors: string[] = [],
-    external: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    if (
-      url.hostname === "127.0.0.1" ||
-      ["blob:", "data:"].includes(url.protocol)
-    )
-      return route.continue();
-    external.push(url.href);
-    return route.abort();
-  });
-  await ready(page, "http://127.0.0.1:4173");
-  await page.getByRole("button", { name: "Try an example input" }).click();
-  await page
-    .getByRole("button", { name: "Complete Sketch", exact: true })
-    .click();
-  await expect(page.getByTestId("status")).toHaveText("Finished", {
-    timeout: 55000,
-  });
-  const count = Number(await page.getByTestId("step-count").innerText());
-  expect(count).toBeGreaterThan(1);
-  expect(count).toBeLessThanOrEqual(300);
-  await page.locator("summary").click();
-  const values = await page
-    .locator("tbody tr")
-    .evaluateAll((rows) =>
-      rows.flatMap((row) =>
-        [1, 2].map((i) => Number(row.children[i].textContent)),
-      ),
-    );
-  expect(values.length).toBeGreaterThan(0);
-  expect(values.every(Number.isFinite)).toBe(true);
-  const purplePixels = await page
-    .getByTestId("sketch-canvas")
-    .evaluate((canvas: HTMLCanvasElement) => {
-      const { data } = canvas
-        .getContext("2d")!
-        .getImageData(0, 0, canvas.width, canvas.height);
-      let count = 0;
-      for (let i = 0; i < data.length; i += 4)
-        if (
-          data[i] > 90 &&
-          data[i + 2] > data[i] &&
-          data[i + 1] < data[i] &&
-          data[i + 3] > 100
-        )
-          count++;
-      return count;
+for (const category of ["cat", "bird", "flower"]) {
+  test(`real ${category} checkpoint generates offline in the production build`, async ({
+    page,
+  }, testInfo) => {
+    const errors: string[] = [],
+      external: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.route("**/*", (route) => {
+      const url = new URL(route.request().url());
+      if (
+        url.hostname === "127.0.0.1" ||
+        ["blob:", "data:"].includes(url.protocol)
+      )
+        return route.continue();
+      external.push(url.href);
+      return route.abort();
     });
-  expect(purplePixels).toBeGreaterThan(30);
-  expect(errors).toEqual([]);
-  expect(external).toEqual([]);
-  await page.screenshot({
-    path: testInfo.outputPath("real-model-desktop.png"),
-    fullPage: true,
+    await ready(page, "http://127.0.0.1:4173");
+    await page
+      .getByRole("combobox", { name: "Drawing category" })
+      .selectOption(category);
+    await expect(page.getByTestId("status")).toHaveText("Ready to draw");
+    await page.getByRole("button", { name: "Try an example input" }).click();
+    await page
+      .getByRole("button", { name: "Complete Sketch", exact: true })
+      .click();
+    await expect(page.getByTestId("status")).toHaveText("Finished", {
+      timeout: 55000,
+    });
+    const count = Number(await page.getByTestId("step-count").innerText());
+    expect(count).toBeGreaterThan(1);
+    expect(count).toBeLessThanOrEqual(300);
+    await page.locator("summary").click();
+    const values = await page
+      .locator("tbody tr")
+      .evaluateAll((rows) =>
+        rows.flatMap((row) =>
+          [1, 2].map((i) => Number(row.children[i].textContent)),
+        ),
+      );
+    expect(values.length).toBeGreaterThan(0);
+    expect(values.every(Number.isFinite)).toBe(true);
+    const purplePixels = await page
+      .getByTestId("sketch-canvas")
+      .evaluate((canvas: HTMLCanvasElement) => {
+        const { data } = canvas
+          .getContext("2d")!
+          .getImageData(0, 0, canvas.width, canvas.height);
+        let count = 0;
+        for (let i = 0; i < data.length; i += 4)
+          if (
+            data[i] > 90 &&
+            data[i + 2] > data[i] &&
+            data[i + 1] < data[i] &&
+            data[i + 3] > 100
+          )
+            count++;
+        return count;
+      });
+    expect(purplePixels).toBeGreaterThan(30);
+    expect(errors).toEqual([]);
+    expect(external).toEqual([]);
+    await page.screenshot({
+      path: testInfo.outputPath(`real-${category}-desktop.png`),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Generate Again" }).click();
+    await expect(page.getByTestId("status")).toHaveText("Generating");
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    const before = Number(await page.getByTestId("step-count").innerText());
+    await page.getByRole("button", { name: "Step", exact: true }).click();
+    await expect(page.getByTestId("step-count")).toHaveText(
+      (before + 1).toString().padStart(3, "0"),
+    );
+    await page.getByRole("button", { name: "Stop", exact: true }).click();
   });
-  await page.getByRole("button", { name: "Generate Again" }).click();
-  await expect(page.getByTestId("status")).toHaveText("Generating");
-  await page.getByRole("button", { name: "Pause", exact: true }).click();
-  const before = Number(await page.getByTestId("step-count").innerText());
-  await page.getByRole("button", { name: "Step", exact: true }).click();
-  await expect(page.getByTestId("step-count")).toHaveText(
-    (before + 1).toString().padStart(3, "0"),
-  );
-  await page.getByRole("button", { name: "Stop", exact: true }).click();
+}
+
+test("switching categories cancels generation and resets input and controls", async ({
+  page,
+}) => {
+  await ready(page);
+  for (const category of ["bird", "flower", "cat"]) {
+    await page.getByRole("button", { name: "Try an example input" }).click();
+    await page
+      .getByRole("button", { name: "Complete Sketch", exact: true })
+      .click();
+    await expect(page.getByTestId("status")).toHaveText("Generating");
+    await page
+      .getByRole("combobox", { name: "Drawing category" })
+      .selectOption(category);
+    await expect(page.getByTestId("status")).toHaveText("Ready to draw");
+    await expect(page.getByTestId("step-count")).toHaveText("000");
+    await expect(
+      page.getByRole("button", { name: "Complete Sketch", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Generate Again" }),
+    ).toBeDisabled();
+    await expect(page.getByTestId("sketch-canvas")).toHaveAccessibleName(
+      new RegExp(`partial ${category}`),
+    );
+  }
+});
+
+test("switching while a checkpoint is loading ignores its stale result", async ({
+  page,
+}) => {
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/models/cat.gen.json", async (route) => {
+    await held;
+    await route.fulfill({ contentType: "application/json", body: "[]" });
+  });
+  await page.goto("http://127.0.0.1:4173");
+  await expect(page.getByTestId("status")).toHaveText("Loading model");
+  await page
+    .getByRole("combobox", { name: "Drawing category" })
+    .selectOption("bird");
+  await expect(page.getByTestId("status")).toHaveText("Ready to draw");
+  release();
+  await page.waitForTimeout(200);
+  await expect(page.getByTestId("status")).toHaveText("Ready to draw");
+  await expect(
+    page.getByRole("combobox", { name: "Drawing category" }),
+  ).toHaveValue("bird");
+  await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
 test("missing and corrupted model assets show recoverable errors", async ({

@@ -4,6 +4,7 @@ import { HEIGHT, simplify, WIDTH } from "./strokes";
 import type { Line, Point, Token } from "./types";
 
 interface Props {
+  category: string;
   lines: readonly Line[];
   generated: readonly Token[];
   enabled: boolean;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function SketchCanvas({
+  category,
   lines,
   generated,
   enabled,
@@ -106,7 +108,7 @@ export function SketchCanvas({
       ref={canvas}
       className="sketch-canvas"
       role="img"
-      aria-label="Sketch canvas. Draw a partial cat with a mouse, pen, or touch. The Example input button provides a keyboard-accessible alternative."
+      aria-label={`Sketch canvas. Draw a partial ${category} with a mouse, pen, or touch. The Example input button provides a keyboard-accessible alternative.`}
       data-testid="sketch-canvas"
       onPointerDown={(e) => {
         if (

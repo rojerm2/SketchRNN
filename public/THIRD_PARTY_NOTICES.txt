@@ -11,7 +11,7 @@ https://github.com/magenta/magenta
 
 The original authors developed and trained the model. This app does not train it.
 Model provenance, checksum, and licensing caveat: /model-source.json.
-The cat checkpoint is obtained separately by npm run prepare:model.
+The cat, bird, and flower checkpoints are obtained separately by npm run prepare:model.
 Quick, Draw! supplied the training sketches; the dataset and weights are distinct assets.
 
 React / React DOM: Meta Platforms, Inc. and affiliates. MIT License.

@@ -1,8 +1,13 @@
 import { SketchRNN } from "@magenta/sketch";
 import type { Inference, Token } from "./types";
+import { MODELS, type ModelDefinition } from "./models";
 
 export class MagentaInference implements Inference {
-  private model = new SketchRNN("/models/cat.gen.json");
+  private model: SketchRNN;
+  private abort?: AbortController;
+  constructor(private definition: ModelDefinition = MODELS[0]) {
+    this.model = new SketchRNN(`/models/${definition.category}.gen.json`);
+  }
   private state!: ReturnType<SketchRNN["zeroState"]>;
   private saved!: ReturnType<SketchRNN["zeroState"]>;
   private pdf!: ReturnType<SketchRNN["getPDF"]>;
@@ -11,15 +16,23 @@ export class MagentaInference implements Inference {
   }
   async load() {
     // Check HTTP status: the upstream loader otherwise attempts to parse an error page.
-    const response = await fetch("/models/cat.gen.json", {
-      signal: AbortSignal.timeout(30000),
-    });
+    this.abort?.abort();
+    this.abort = new AbortController();
+    const response = await fetch(
+      `/models/${this.definition.category}.gen.json`,
+      {
+        signal: AbortSignal.any([
+          this.abort.signal,
+          AbortSignal.timeout(30000),
+        ]),
+      },
+    );
     if (
       !response.ok ||
       !response.headers.get("content-type")?.includes("json")
     ) {
       throw new Error(
-        "Cat weights are missing. Run npm run prepare:model, then reload the model.",
+        `${this.definition.label} weights are missing. Run npm run prepare:model, then reload the model.`,
       );
     }
     const bytes = await response.arrayBuffer();
@@ -27,12 +40,9 @@ export class MagentaInference implements Inference {
     const checksum = [...new Uint8Array(digest)]
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
-    if (
-      checksum !==
-      "54d83b0b790323eb758739d7c685f12e1a68740361f35e451a3e0cee1b577ae9"
-    ) {
+    if (checksum !== this.definition.sha256) {
       throw new Error(
-        "The cat checkpoint did not pass its integrity check. Run npm run prepare:model, rebuild, and reload.",
+        `The ${this.definition.category} checkpoint did not pass its integrity check. Run npm run prepare:model, rebuild, and reload.`,
       );
     }
     this.model.dispose();
@@ -73,6 +83,7 @@ export class MagentaInference implements Inference {
     ];
   }
   dispose() {
+    this.abort?.abort();
     this.model.dispose();
   }
 }

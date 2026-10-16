@@ -75,21 +75,6 @@ export function toTokens(lines: readonly Line[]): Token[] {
   return tokens;
 }
 
-export const EXAMPLE: readonly Line[] = [
-  [
-    [300, 245],
-    [304, 208],
-    [310, 170],
-    [340, 197],
-    [366, 189],
-    [397, 189],
-    [422, 198],
-    [453, 171],
-    [463, 213],
-    [468, 242],
-  ],
-];
-
 export function finiteToken(token: Token) {
   return (
     token.length === 5 &&
